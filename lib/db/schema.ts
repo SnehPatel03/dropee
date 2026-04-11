@@ -10,7 +10,7 @@ import { relations } from "drizzle-orm";
   
 export const files = pgTable("files", {
   id: uuid("id").primaryKey().defaultRandom(),
-
+  imagekit_file_id: text("imagekit_file_id").notNull(),
   name: text("name").notNull(),
   path: text("path").notNull(),
   size: integer("size").notNull(),

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { files } from "@/lib/db/schema";
 import { auth } from "@clerk/nextjs/server";
 import { eq, and } from "drizzle-orm";
+import ImageKit from "imagekit";
 import { NextResponse, NextRequest } from "next/server";
 
 export async function DELETE(
@@ -9,6 +10,12 @@ export async function DELETE(
   { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
+    const imageKit = new ImageKit({
+      publicKey: process.env.IMAGE_KIT_PUBLIC_KEY || "",
+      privateKey: process.env.IMAGE_KIT_PRIVATE_KEY || "",
+      urlEndpoint: process.env.IMAGE_KIT_URL_ENDPOINT || "",
+    });
+
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json(
@@ -28,6 +35,7 @@ export async function DELETE(
         { status: 404 },
       );
     }
+
     const [file] = await db
       .select()
       .from(files)
@@ -45,13 +53,26 @@ export async function DELETE(
     await db
       .delete(files)
       .where(and(eq(files.id, fileId), eq(files.user_id, userId)));
+
+    //also deleted from ImageKit
+    try {
+      await imageKit.deleteFile(file.imagekit_file_id);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: "There is an Error to Delete the the File from ImageKit.",
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({
       message: "File permanently deleted",
     });
   } catch (error) {
     return NextResponse.json(
       {
-        error: "There is an Error to Delete the the File.",
+        error: "There is an Error to Delete the the File from DB.",
       },
       { status: 500 },
     );
