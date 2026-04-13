@@ -1,9 +1,20 @@
-import React from 'react'
-
+"use client"
+import React from "react";
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 const dashboard = () => {
+  const { signOut } = useAuth();
+  const router = useRouter();
   return (
-    <div>dashboard</div>
-  )
-}
+    <button
+      onClick={async () => {
+        await signOut();
+        router.push("/");
+      }}
+    >
+      Logout
+    </button>
+  );
+};
 
-export default dashboard
+export default dashboard;
