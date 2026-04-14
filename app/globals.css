@@ -25,7 +25,31 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.Toastify__toast {
+  background: rgba(20, 20, 20, 0.55) !important;
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  color: white !important;
+  font-size: 13px;
+  padding: 12px 14px;
+}
 
+.Toastify__progress-bar {
+  background: linear-gradient(90deg, #7c3aed, #06b6d4) !important;
+}
+
+.Toastify__close-button {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.Toastify__toast--success {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+.Toastify__toast--error {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
 
 @custom-variant dark (&:is(.dark *));
 

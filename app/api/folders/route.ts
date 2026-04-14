@@ -19,16 +19,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, userId: BodyUserId, parent_id = null } = body;
+    const { name, 
+        // userId: BodyUserId,
+         parent_id = null } = body;
 
-    if (userId !== BodyUserId) {
-      return NextResponse.json(
-        {
-          error: "Unauthorize",
-        },
-        { status: 401 },
-      );
-    }
+    // if (userId !== BodyUserId) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "Unauthorize",
+    //     },
+    //     { status: 401 },
+    //   );
+    // }
 
     if (!name || name.trim() === "" || typeof name !== "string") {
       return NextResponse.json(
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
             eq(files.isFolder, true),
           ),
         );
+
       if (!parentFolder) {
         return NextResponse.json(
           {
@@ -62,6 +65,7 @@ export async function POST(request: NextRequest) {
 
     const folderData = {
       id: uuidv4(),
+      imagekit_file_id: uuidv4(),
       name: name.trim(),
       path: `/folder/${userId}/${uuidv4()}`,
       size: 0,
@@ -76,6 +80,7 @@ export async function POST(request: NextRequest) {
     };
 
     const [newFolder] = await db.insert(files).values(folderData).returning();
+
     return NextResponse.json({
       success: true,
       status: 200,

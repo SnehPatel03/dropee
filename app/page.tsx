@@ -92,17 +92,6 @@ export default function Home() {
               <span className="text-primary">for storage.</span>
             </h2>
           </div>
-          <div className="flex gap-2 text-sm">
-            <span className="px-3 py-1 border border-foreground bg-foreground text-background">
-              All
-            </span>
-            <span className="px-3 py-1 border border-border text-muted-foreground hover:border-foreground hover:text-foreground transition cursor-pointer">
-              Security
-            </span>
-            <span className="px-3 py-1 border border-border text-muted-foreground hover:border-foreground hover:text-foreground transition cursor-pointer">
-              Teams
-            </span>
-          </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-border">

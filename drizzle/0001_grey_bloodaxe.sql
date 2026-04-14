@@ -1,0 +1,1 @@
+ALTER TABLE "files" ADD COLUMN "imagekit_file_id" text NOT NULL;
