@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { signInSchema } from "@/schemas/signInSchema";
 import { useSignIn, useAuth } from "@clerk/nextjs";
@@ -38,33 +38,69 @@ export default function SignInForm() {
         await signOut();
       }
 
-      const res: any = await signIn.create({
-        identifier: data.identifier,
+      const { error }: any = await signIn.password({
+        emailAddress: data.identifier,
         password: data.password,
       });
-      console.log(res);
+
+      if (error) {
+        const err = error.errors?.[0];
+        console.log("ERROR:", err);
+
+        if (err?.code === "form_identifier_not_found") {
+          setAuthErr("No account found with this email.");
+          return;
+        }
+
+        if (err?.code === "form_password_incorrect") {
+          setAuthErr("Incorrect password.");
+          return;
+        }
+
+        if (err?.code === "session_exists") {
+          setAuthErr("You are already signed in. Please logout first.");
+          return;
+        }
+
+        setAuthErr(err?.message || "Sign-in failed");
+        return;
+      }
+
       if (signIn.status === "complete") {
         await signIn.finalize({
-          navigate: ({ decorateUrl }) => {
-            router.push(decorateUrl("/dashboard"));
+          navigate: ({ session, decorateUrl }) => {
+            // Handle session tasks
+            // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
+            if (session?.currentTask) {
+              console.log(session?.currentTask);
+              return;
+            }
+
+            // If no session tasks, navigate the signed-in user to the dashboard
+            const url = decorateUrl("/dashboard");
+            if (url.startsWith("http")) {
+              window.location.href = url;
+            } else {
+              router.push(url);
+            }
           },
         });
+      } else if (signIn.status === "needs_second_factor") {
+        // Handle MFA
+        // See https://clerk.com/docs/guides/development/custom-flows/authentication/multi-factor-authentication
+        setAuthErr("Multi-factor authentication required.");
+      } else if (signIn.status === "needs_client_trust") {
+        // Handle client trust
+        // See https://clerk.com/docs/guides/development/custom-flows/authentication/client-trust
+        setAuthErr("Additional verification required.");
       } else {
-        setAuthErr("Invalid credentials.");
+        // Check why the sign-in is not complete
+        console.error("Sign-in attempt not complete:", signIn);
+        setAuthErr("Sign-in incomplete. Please try again.");
       }
     } catch (error: any) {
       console.log("FULL ERROR:", error);
-      const err = error?.errors?.[0];
-      if (err?.code === "form_identifier_not_found") {
-        setAuthErr("No account found with this email.");
-      } else if (err?.code === "form_password_incorrect") {
-        setAuthErr("Incorrect password.");
-      } else if (err?.message?.includes("already signed in")) {
-        await signOut();
-        setAuthErr("Session conflict. Please try again.");
-      } else {
-        setAuthErr(err?.message || "Something went wrong.");
-      }
+      setAuthErr("Something went wrong. Try again.");
     } finally {
       setIsSubmitting(false);
     }

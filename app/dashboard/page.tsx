@@ -1,34 +1,33 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
+import { useAuth, useUser } from "@clerk/nextjs";
 import {
-  Search,
-  Bell,
+  ArrowUpRight,
+  ChevronRight,
+  Cloud,
+  File,
+  FileImage,
+  FileText,
   FolderOpen,
+  FolderPlus,
+  Grid3X3,
+  Home,
+  List,
+  LogOut,
+  MoreVertical,
+  Plus,
+  RotateCcw,
+  Search,
   Star,
   Trash2,
   Upload,
-  Grid3X3,
-  List,
-  MoreVertical,
-  File,
-  FileText,
-  FileImage,
-  ChevronRight,
-  Plus,
   X,
-  RotateCcw,
-  FolderPlus,
-  Home,
-  Settings,
-  LogOut,
-  Cloud,
-  ArrowUpRight,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 type FileItem = {
   id: string;
@@ -69,6 +68,13 @@ export default function Dashboard() {
       fetchFiles();
     }
   }, [user?.id]);
+ const displayName =
+  user?.fullName?.trim() ||
+  (user?.firstName || user?.lastName
+    ? `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim()
+    : "") ||
+  user?.username ||
+  "User";
   const openMoveModal = (folderId: string) => {
     setMoveTargetFolder(folderId);
     setShowMoveModal(true);
@@ -118,18 +124,25 @@ export default function Dashboard() {
       toast.error("User not logged in");
       return;
     }
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+    ];
 
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, WEBP images and PDFs are allowed");
+      return;
+    }
     setUploading(true);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      // 👇 use passed folder OR fallback to current folder
-      const targetFolder = folderId ?? currentFolderId;
-
-      if (targetFolder) {
-        formData.append("parent_id", targetFolder);
+      if (folderId || currentFolderId) {
+        formData.append("parent_id", folderId ?? currentFolderId!);
       }
 
       const res = await fetch("/api/files/upload", {
@@ -140,24 +153,20 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data?.error || "Upload failed");
-        return;
+        throw new Error(data?.error || "Upload failed");
       }
 
-      toast.success("File uploaded 🎉");
-
-      // update UI
       setFiles((prev) => [
         {
           id: data.id,
-          name: data.name,
+          name: data.name || "Untitled File",
           type: "file",
           fileType: data.type?.startsWith("image")
             ? "image"
             : data.type?.includes("pdf")
               ? "pdf"
               : "other",
-          size: data.size ? `${(data.size / 1024).toFixed(1)} KB` : undefined,
+          size: data.size ? `${(data.size / 1024).toFixed(1)} KB` : "Unknown",
           modified: "Just now",
           starred: false,
           deleted: false,
@@ -166,7 +175,10 @@ export default function Dashboard() {
         },
         ...prev,
       ]);
+
+      toast.success("File uploaded 🎉");
     } catch (err) {
+      console.error(err);
       toast.error("Upload failed");
     } finally {
       setUploading(false);
@@ -185,8 +197,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           name,
-          userId, // from Clerk
-          // parent_id,
+          userId,
         }),
       });
 
@@ -212,7 +223,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           fileId,
-          folderId, // null = move to root
+          folderId,
         }),
       });
 
@@ -282,9 +293,11 @@ export default function Dashboard() {
   };
 
   const filteredFiles = files.filter((file) => {
-    const matchesSearch = file.name
+    const fileName = file.name?.trim() || "Unnamed File";
+
+    const matchesSearch = fileName
       .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+      .includes((searchQuery || "").toLowerCase());
 
     if (activeSection === "trash") {
       return file.deleted && matchesSearch;
@@ -346,7 +359,18 @@ export default function Dashboard() {
       Array.from(files).forEach((file) => handleUpload(file));
     }
   };
+  const { signOut } = useAuth();
+  const router = useRouter();
+  if (!isLoaded) return null;
 
+  const handleLogOut = async () => {
+    try {
+      await signOut();
+      router.push("/"); // redirect after logout
+    } catch (err) {
+      console.log("Logout error:", err);
+    }
+  };
   const sidebarItems = [
     {
       id: "files",
@@ -399,18 +423,41 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* User Profile - Animated Card */}
         <div className="px-8 pb-8">
-          <div className="flex items-center gap-4 p-4 bg-background/5 border border-background/10">
-            <div className="w-12 h-12 bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold font-display">
-              JD
+          <div className="group relative overflow-hidden p-4 bg-background/5 border border-background/10 hover:border-primary/50 transition-all duration-500 cursor-pointer">
+            {/* Animated gradient background on hover */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+            {/* Animated corner accent */}
+            <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 -translate-y-1/2 translate-x-1/2 bg-primary/20 rotate-45 group-hover:bg-primary/40 transition-colors duration-500" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display font-bold text-sm truncate">
-                John Doe
-              </p>
-              <p className="text-background/50 text-xs truncate">
-                john@dropee.io
-              </p>
+
+            <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-primary to-primary/40 group-hover:w-full transition-all duration-700 ease-out" />
+
+            <div className="relative flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute -inset-1 bg-primary/30 opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300" />
+                <div className="relative w-12 h-12 bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold font-display transform group-hover:scale-105 transition-transform duration-300">
+                  {displayName.charAt(0)}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-display font-bold text-sm truncate group-hover:text-primary transition-colors duration-300">
+                    {displayName || "User"}
+                  </p>
+                  <ArrowUpRight className="w-3 h-3 opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0 transition-all duration-300" />
+                </div>
+                <p className="text-background/50 text-xs truncate">
+                  {user?.primaryEmailAddress?.emailAddress || "No email"}
+                </p>
+                <p className="text-[9px] uppercase tracking-[0.15em] text-primary/70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  View Profile
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -541,9 +588,16 @@ export default function Dashboard() {
               <FolderPlus className="w-4 h-4 opacity-60" />
               New Folder
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-xs font-display font-bold tracking-wider text-primary hover:bg-primary/10 transition-all">
+
+            <button
+              disabled={uploading}
+              className={`w-full flex items-center gap-3  text-xs font-display font-bold tracking-wider  hover:bg-primary/10 transition-all px-5 py-2.5  text-background  ${
+                uploading ? "opacity-50 cursor-not-allowed" : ""
+              } `}
+              onClick={handleBrowseClick}
+            >
               <Upload className="w-4 h-4" />
-              <span>UPLOAD FILES</span>
+              Upload Files
             </button>
           </div>
         </nav>
@@ -577,12 +631,11 @@ export default function Dashboard() {
 
           {/* Bottom Links */}
           <div className="flex gap-2">
-            <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-display font-bold tracking-wider text-background/50 hover:text-background border border-background/10 hover:border-background/20 transition-all">
-              <Settings className="w-3 h-3" />
-              SETTINGS
-            </button>
-            <button className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-display font-bold tracking-wider text-background/50 hover:text-background border border-background/10 hover:border-background/20 transition-all">
-              <LogOut className="w-3 h-3" />
+            <button
+              onClick={() => handleLogOut()}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-display font-bold tracking-wider text-background/50 hover:text-background border border-background/10  hover:bg-[#D31100] hover:text-[11px] transition-all duration-300 hover:border-background/20 "
+            >
+              <LogOut className="w-3 h-3 hover:text-[11px]" />
               LOGOUT
             </button>
           </div>
@@ -613,39 +666,39 @@ export default function Dashboard() {
               {activeSection === "starred"
                 ? "Starred Files"
                 : activeSection === "trash"
-                ? "Trash Bin"
-                : "Your Files"}
+                  ? "Trash Bin"
+                  : "Your Files"}
             </h1>
           </div>
           <div className="flex items-center gap-4">
             {activeSection === "files" && currentFolderId && (
               <button
-              onClick={() => {
-                setMoveTargetFolder(currentFolderId); // 👈 current open folder
-                setShowMoveModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-display font-bold tracking-wider hover:opacity-90 transition"
+                onClick={() => {
+                  setMoveTargetFolder(currentFolderId); // 👈 current open folder
+                  setShowMoveModal(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-display font-bold tracking-wider hover:opacity-90 transition"
               >
                 <Upload className="w-4 h-4" />
                 ADD FILE
               </button>
             )}
             {currentFolderId && (
-    <button
-      onClick={() => {
-        if (breadcrumbs.length > 1) {
-          const newBreadcrumbs = breadcrumbs.slice(0, -1);
-          const last = newBreadcrumbs[newBreadcrumbs.length - 1];
-  
-          setBreadcrumbs(newBreadcrumbs);
-          setCurrentFolderId(last.id);
-        }
-      }}
-      className="flex items-center gap-2 px-3 py-1.5 text-xs font-display font-bold tracking-wider border border-border hover:border-foreground transition"
-    >
-      ← BACK
-    </button>
-  )}
+              <button
+                onClick={() => {
+                  if (breadcrumbs.length > 1) {
+                    const newBreadcrumbs = breadcrumbs.slice(0, -1);
+                    const last = newBreadcrumbs[newBreadcrumbs.length - 1];
+
+                    setBreadcrumbs(newBreadcrumbs);
+                    setCurrentFolderId(last.id);
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-display font-bold tracking-wider border border-border hover:border-foreground transition"
+              >
+                ← BACK
+              </button>
+            )}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -657,25 +710,21 @@ export default function Dashboard() {
               />
             </div>
 
-            <div className="flex items-center border border-border">
+            <div className="flex items-center border border-border relative z-10">
               <button
-                onClick={() => setViewMode("grid")}
+                key={viewMode}
+                onClick={() => setViewMode((prev) => "grid")}
                 className={`p-2.5 transition ${viewMode === "grid" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setViewMode("list")}
+                onClick={() => setViewMode((prev) => "list")}
                 className={`p-2.5 transition ${viewMode === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
-
-            <button className="relative p-2.5 border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary" />
-            </button>
           </div>
         </header>
 
@@ -731,12 +780,12 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={handleBrowseClick}
-                  className={`px-5 py-2.5 bg-foreground text-background ${
+                  className={`px-5 py-2.5 bg-foreground text-background flex  items-center gap-2  ${
                     uploading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                   disabled={uploading}
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   Browse Files
                 </button>
               </div>
@@ -819,7 +868,6 @@ export default function Dashboard() {
                       viewMode === "grid" ? "" : "flex items-center gap-4 p-4"
                     }`}
                   >
-                    {/* Grid View */}
                     {viewMode === "grid" ? (
                       <>
                         <div
@@ -834,7 +882,7 @@ export default function Dashboard() {
                             {getFileIcon(file)}
                           </div>
                           <p className="text-sm font-display font-bold truncate uppercase tracking-wide">
-                            {file.name}
+                            {file.name?.trim() ? file.name : "Untitled File"}
                           </p>
                           <div className="flex items-center justify-between mt-2">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -867,19 +915,21 @@ export default function Dashboard() {
                             </>
                           ) : (
                             <>
-                              <button
-                                onClick={() => toggleStar(file.id)}
-                                className={`p-2 bg-background border transition ${
-                                  file.starred
-                                    ? "border-primary text-primary"
-                                    : "border-border hover:border-primary hover:text-primary"
-                                }`}
-                                title={file.starred ? "Unstar" : "Star"}
-                              >
-                                <Star
-                                  className={`w-3 h-3 ${file.starred ? "fill-current" : ""}`}
-                                />
-                              </button>
+                              {file.type === "file" && (
+                                <button
+                                  onClick={() => toggleStar(file.id)}
+                                  className={`p-2 bg-background border transition ${
+                                    file.starred
+                                      ? "border-primary text-primary"
+                                      : "border-border hover:border-primary hover:text-primary"
+                                  }`}
+                                  title={file.starred ? "Unstar" : "Star"}
+                                >
+                                  <Star
+                                    className={`w-3 h-3 ${file.starred ? "fill-current" : ""}`}
+                                  />
+                                </button>
+                              )}
                               <button
                                 onClick={() => moveToTrash(file.id)}
                                 className="p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
@@ -887,14 +937,10 @@ export default function Dashboard() {
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
-                              <button className="p-2 bg-background border border-border hover:border-foreground transition">
-                                <MoreVertical className="w-3 h-3" />
-                              </button>
                             </>
                           )}
                         </div>
 
-                        {/* Open indicator for folders */}
                         {file.type === "folder" && (
                           <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition">
                             <button

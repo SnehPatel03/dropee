@@ -26,17 +26,17 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const userFormUserId = formData.get("user_id") as string;
+    // const userFormUserId = formData.get("user_id") as string;
     const parent_id = (formData.get("parent_id") as string) || null;
 
-    if (userFormUserId !== userId) {
-      return NextResponse.json(
-        {
-          error: "Unauthorize",
-        },
-        { status: 401 },
-      );
-    }
+    // if (userFormUserId !== userId) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "Unauthorize User id is diffrent",
+    //     },
+    //     { status: 401 },
+    //   );
+    // }
 
     if (!file) {
       return NextResponse.json(
@@ -44,6 +44,12 @@ export async function POST(request: NextRequest) {
           error: "File is not provided.",
         },
         { status: 401 },
+      );
+    }
+    if (!file.name || file.name.trim() === "") {
+      return NextResponse.json(
+        { error: "File name is required" },
+        { status: 400 },
       );
     }
     if (parent_id) {
@@ -125,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newFile);
   } catch (error) {
-    console.error("UPLOAD ERROR:", error); // 👈 add this
+    console.error("UPLOAD ERROR:", error);
     return NextResponse.json(
       {
         error: "There is an Error in Uploading files",

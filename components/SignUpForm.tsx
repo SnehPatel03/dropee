@@ -17,7 +17,6 @@ export default function SignUpForm() {
   const [verificationCode, setVerificationCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const { signUp } = useSignUp();
-
   const router = useRouter();
 
   const {
@@ -39,15 +38,22 @@ export default function SignUpForm() {
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
     setIsSubmitting(true);
     SetauthErr(null);
+
     try {
       if (isSignedIn) {
         SetauthErr("You are already logged in. Please logout first.");
         setIsSubmitting(false);
+        return;
       }
+
+      const [firstName, ...rest] = data.name.trim().split(" ");
+      const lastName = rest.join(" ");
 
       const { error }: any = await signUp.password({
         emailAddress: data.email,
         password: data.password,
+        firstName: firstName || "",
+        lastName: lastName || "",
       });
 
       if (error) {
@@ -82,27 +88,6 @@ export default function SignUpForm() {
         return;
       }
 
-      if (error) {
-        const err = error.errors?.[0];
-        console.log("ERROR:", err);
-
-        if (err?.code === "form_password_pwned") {
-          SetauthErr(
-            "Password is too weak or found in breach. Try stronger one.",
-          );
-        } else if (err?.code === "identifier_already_signed_in") {
-          SetauthErr("You are already signed in. Please logout first.");
-        } else {
-          SetauthErr(err?.message || "Signup failed");
-        }
-
-        return;
-      }
-
-      await signUp.update({
-        firstName: data.name,
-      });
-
       await signUp.verifications.sendEmailCode();
       setVerifying(true);
     } catch (error: any) {
@@ -125,15 +110,8 @@ export default function SignUpForm() {
 
       if (signUp.status === "complete") {
         await signUp.finalize({
-          navigate: ({ session, decorateUrl }) => {
-            if (session?.currentTask) return;
-
-            const url = decorateUrl("/dashboard");
-            if (url.startsWith("http")) {
-              window.location.href = url;
-            } else {
-              router.push(url);
-            }
+          navigate: ({ decorateUrl }) => {
+            router.push(decorateUrl("/dashboard"));
           },
         });
       } else {
@@ -166,11 +144,15 @@ export default function SignUpForm() {
                 transition={{ delay: 0.1, duration: 0.4 }}
                 className="flex items-center gap-1 mb-6 lg:hidden"
               >
-                <span className="text-2xl font-bold tracking-tight text-[#0A0A0A]">drop</span>
-                <span className="text-2xl font-bold tracking-tight text-[#D31100]">ee</span>
+                <span className="text-2xl font-bold tracking-tight text-[#0A0A0A]">
+                  drop
+                </span>
+                <span className="text-2xl font-bold tracking-tight text-[#D31100]">
+                  ee
+                </span>
                 <span className="text-[#D31100] text-3xl leading-none">.</span>
               </motion.div>
-              
+
               <motion.h2
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -252,7 +234,7 @@ export default function SignUpForm() {
             <div className="absolute bottom-32 right-16 w-48 h-48 border border-white/20 rounded-full" />
             <div className="absolute top-1/2 left-1/3 w-32 h-32 border border-white/20 rounded-full" />
           </div>
-          
+
           <div className="relative z-10 text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -260,11 +242,15 @@ export default function SignUpForm() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="flex items-center justify-center gap-1 mb-8"
             >
-              <span className="text-5xl font-bold tracking-tight text-white">drop</span>
-              <span className="text-5xl font-bold tracking-tight text-[#D31100]">ee</span>
+              <span className="text-5xl font-bold tracking-tight text-white">
+                drop
+              </span>
+              <span className="text-5xl font-bold tracking-tight text-[#D31100]">
+                ee
+              </span>
               <span className="text-[#D31100] text-6xl leading-none">.</span>
             </motion.div>
-            
+
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -297,11 +283,15 @@ export default function SignUpForm() {
               transition={{ delay: 0.1, duration: 0.4 }}
               className="flex items-center gap-1 mb-6 lg:hidden"
             >
-              <span className="text-2xl font-bold tracking-tight text-[#0A0A0A]">drop</span>
-              <span className="text-2xl font-bold tracking-tight text-[#D31100]">ee</span>
+              <span className="text-2xl font-bold tracking-tight text-[#0A0A0A]">
+                drop
+              </span>
+              <span className="text-2xl font-bold tracking-tight text-[#D31100]">
+                ee
+              </span>
               <span className="text-[#D31100] text-3xl leading-none">.</span>
             </motion.div>
-            
+
             <motion.h2
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -456,7 +446,7 @@ export default function SignUpForm() {
           <div className="absolute bottom-32 right-16 w-48 h-48 border border-white/20 rounded-full" />
           <div className="absolute top-1/2 left-1/3 w-32 h-32 border border-white/20 rounded-full" />
         </div>
-        
+
         <div className="relative z-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -465,19 +455,24 @@ export default function SignUpForm() {
             className="flex items-center justify-center gap-1 mb-8"
           >
             <Link href={"/"}>
-            <span className="text-5xl font-bold tracking-tight text-white">drop</span>
-            <span className="text-5xl font-bold tracking-tight text-[#D31100]">ee</span>
-            <span className="text-[#D31100] text-6xl leading-none">.</span>
+              <span className="text-5xl font-bold tracking-tight text-white">
+                drop
+              </span>
+              <span className="text-5xl font-bold tracking-tight text-[#D31100]">
+                ee
+              </span>
+              <span className="text-[#D31100] text-6xl leading-none">.</span>
             </Link>
           </motion.div>
-          
+
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
             className="text-white/60 text-lg tracking-wide max-w-xs mx-auto"
           >
-            Join thousands of users who trust Dropee for their cloud storage needs.
+            Join thousands of users who trust Dropee for their cloud storage
+            needs.
           </motion.p>
         </div>
       </div>
