@@ -18,6 +18,7 @@ import {
   Home,
   List,
   LogOut,
+  Menu,
   MoreVertical,
   Plus,
   RotateCcw,
@@ -59,12 +60,15 @@ const LoadingOverlay = ({ message }: { message?: string }) => (
 );
 
 const LoadingSkeleton = () => (
-  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
     {[...Array(6)].map((_, i) => (
-      <div key={i} className="border border-border bg-card p-4 animate-pulse">
-        <div className="w-full aspect-square bg-muted mb-4" />
-        <div className="h-4 bg-muted rounded w-3/4 mb-2" />
-        <div className="h-3 bg-muted rounded w-1/2" />
+      <div
+        key={i}
+        className="border border-border bg-card p-3 sm:p-4 animate-pulse"
+      >
+        <div className="w-full aspect-square bg-muted mb-3 sm:mb-4" />
+        <div className="h-3 sm:h-4 bg-muted rounded w-3/4 mb-2" />
+        <div className="h-2 sm:h-3 bg-muted rounded w-1/2" />
       </div>
     ))}
   </div>
@@ -95,13 +99,14 @@ export default function Dashboard() {
     remaining: 0,
   });
   const [uploading, setUploading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const userId = user?.id;
 
   useEffect(() => {
     const fetchStorage = async () => {
       try {
-        const res = await fetch("/api/storage"); // your GET API
+        const res = await fetch("/api/storage");
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error);
@@ -355,16 +360,17 @@ export default function Dashboard() {
   };
 
   const getFileIcon = (file: FileItem) => {
-    if (file.type === "folder") return <FolderOpen className="w-5 h-5" />;
+    if (file.type === "folder")
+      return <FolderOpen className="w-4 h-4 sm:w-5 sm:h-5" />;
     switch (file.fileType) {
       case "image":
-        return <FileImage className="w-5 h-5" />;
+        return <FileImage className="w-4 h-4 sm:w-5 sm:h-5" />;
       case "pdf":
-        return <FileText className="w-5 h-5" />;
+        return <FileText className="w-4 h-4 sm:w-5 sm:h-5" />;
       case "doc":
-        return <FileText className="w-5 h-5" />;
+        return <FileText className="w-4 h-4 sm:w-5 sm:h-5" />;
       default:
-        return <File className="w-5 h-5" />;
+        return <File className="w-4 h-4 sm:w-5 sm:h-5" />;
     }
   };
 
@@ -407,7 +413,6 @@ export default function Dashboard() {
         files.map((f) => (f.id === id ? { ...f, starred: !f.starred } : f)),
       );
 
-      // API call to update star status
       const file = files.find((f) => f.id === id);
       const res = await fetch(`/api/files/${id}/star`, {
         method: "PATCH",
@@ -423,7 +428,6 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Star error:", err);
       toast.error("Failed to update");
-      // Revert on error
       setFiles(
         files.map((f) => (f.id === id ? { ...f, starred: !f.starred } : f)),
       );
@@ -503,6 +507,7 @@ export default function Dashboard() {
 
       if (!res.ok) throw new Error("Failed to restore");
 
+      setFiles((prev) => prev.filter((f) => f.id !== id));
       toast.success("File restored");
     } catch (err) {
       console.error("Restore error:", err);
@@ -517,6 +522,7 @@ export default function Dashboard() {
     if (folder.type === "folder" && !folder.deleted) {
       setCurrentFolderId(folder.id);
       setBreadcrumbs([...breadcrumbs, { id: folder.id, name: folder.name }]);
+      setMobileMenuOpen(false);
     }
   };
 
@@ -599,44 +605,70 @@ export default function Dashboard() {
     } else {
       setBreadcrumbs([{ id: null, name: "All Files" }]);
     }
+    setMobileMenuOpen(false);
   };
 
   const storageUsed = (storage.used / (1024 * 1024 * 1024)).toFixed(2);
   const storageTotal = (storage.limit / (1024 * 1024 * 1024)).toFixed(2);
   const storagePercent =
     storage.limit > 0 ? (storage.used / storage.limit) * 100 : 0;
+
   return (
     <>
       {/* Global Loading Overlay */}
       {operationLoading && <LoadingOverlay message={operationMessage} />}
 
-      <div className="min-h-screen bg-background text-foreground flex">
-        <aside className="w-72 bg-foreground text-background flex flex-col">
-          <div className="p-8 pb-6">
-            <Link
-              href="/"
-              className="font-display text-3xl font-bold tracking-tight"
+      <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row">
+        {/* Mobile Header */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-foreground text-background border-b border-background/10 p-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="font-display text-2xl font-bold tracking-tight"
+          >
+            drop<span className="text-primary">ee</span>
+          </Link>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 hover:bg-background/10 transition"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Sidebar - Mobile Drawer */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-foreground text-background flex flex-col transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+            mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="p-8 pb-6 flex items-center justify-between">
+            <div>
+              <Link
+                href="/"
+                className="font-display text-3xl font-bold tracking-tight"
+              >
+                drop<span className="text-primary">ee</span>
+              </Link>
+              <p className="text-background/40 text-[10px] uppercase tracking-[0.2em] mt-2">
+                Cloud Storage
+              </p>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="lg:hidden p-2 hover:bg-background/10 transition"
             >
-              drop<span className="text-primary">ee</span>
-            </Link>
-            <p className="text-background/40 text-[10px] uppercase tracking-[0.2em] mt-2">
-              Cloud Storage
-            </p>
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* User Profile - Animated Card */}
           <div className="px-8 pb-8">
             <div className="group relative overflow-hidden p-4 bg-background/5 border border-background/10 hover:border-primary/50 transition-all duration-500 cursor-pointer">
-              {/* Animated gradient background on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              {/* Animated corner accent */}
               <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden">
                 <div className="absolute top-0 right-0 w-16 h-16 -translate-y-1/2 translate-x-1/2 bg-primary/20 rotate-45 group-hover:bg-primary/40 transition-colors duration-500" />
               </div>
-
               <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-primary to-primary/40 group-hover:w-full transition-all duration-700 ease-out" />
-
               <div className="relative flex items-center gap-4">
                 <div className="relative">
                   <div className="absolute -inset-1 bg-primary/30 opacity-0 group-hover:opacity-100 group-hover:animate-pulse transition-opacity duration-300" />
@@ -644,7 +676,6 @@ export default function Dashboard() {
                     {displayName.charAt(0)}
                   </div>
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-display font-bold text-sm truncate group-hover:text-primary transition-colors duration-300">
@@ -663,7 +694,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <nav className="flex-1 px-4">
+          <nav className="flex-1 px-4 overflow-y-auto">
             <p className="px-4 mb-3 text-[10px] uppercase tracking-[0.2em] text-background/40 font-display">
               Navigate
             </p>
@@ -701,14 +732,12 @@ export default function Dashboard() {
               ))}
             </div>
             {showMoveModal && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-background border border-border w-[420px] max-h-[500px] overflow-hidden shadow-xl">
-                  {/* Header */}
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-background border border-border w-full max-w-[420px] max-h-[500px] overflow-hidden shadow-xl">
                   <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                     <h2 className="text-sm font-display font-bold uppercase tracking-wider text-foreground">
                       Add Existing File
                     </h2>
-
                     <button
                       onClick={() => setShowMoveModal(false)}
                       className="text-muted-foreground hover:text-foreground transition"
@@ -716,8 +745,6 @@ export default function Dashboard() {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-
-                  {/* File List */}
                   <div className="max-h-[350px] overflow-y-auto">
                     {files
                       .filter(
@@ -731,7 +758,7 @@ export default function Dashboard() {
                           key={file.id}
                           className="flex items-center justify-between px-5 py-3 border-b border-border hover:bg-muted/50 transition"
                         >
-                          <div className="flex flex-col min-w-0">
+                          <div className="flex flex-col min-w-0 flex-1 mr-4">
                             <p className="text-sm font-medium text-foreground truncate">
                               {file.name}
                             </p>
@@ -739,17 +766,14 @@ export default function Dashboard() {
                               {file.size || "File"}
                             </span>
                           </div>
-
                           <button
                             onClick={() => handleMove(file.id)}
-                            className="text-xs font-bold px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 transition"
+                            className="text-xs font-bold px-3 py-1.5 bg-primary text-primary-foreground hover:opacity-90 transition whitespace-nowrap"
                           >
                             Add
                           </button>
                         </div>
                       ))}
-
-                    {/* Empty state */}
                     {files.filter(
                       (f) =>
                         f.type === "file" &&
@@ -761,8 +785,6 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-
-                  {/* Footer */}
                   <div className="p-4 border-t border-border">
                     <button
                       onClick={() => setShowMoveModal(false)}
@@ -788,7 +810,6 @@ export default function Dashboard() {
                 <FolderPlus className="w-4 h-4 opacity-60" />
                 New Folder
               </button>
-
               <button
                 disabled={uploading}
                 className={`w-full flex items-center gap-3 text-xs font-display font-bold tracking-wider hover:bg-primary/10 transition-all px-5 py-2.5 text-background ${
@@ -811,10 +832,10 @@ export default function Dashboard() {
                 <Cloud className="w-4 h-4 text-primary" />
               </div>
               <div className="flex items-baseline gap-1 mb-3">
-                <span className="text-3xl font-display font-bold">
+                <span className="text-2xl sm:text-3xl font-display font-bold">
                   {storageUsed}
                 </span>
-                <span className="text-background/50 text-sm">
+                <span className="text-background/50 text-xs sm:text-sm">
                   / {storageTotal} GB
                 </span>
               </div>
@@ -828,41 +849,51 @@ export default function Dashboard() {
                 {Math.round(storagePercent)}% used
               </p>
             </div>
-
-            {/* Bottom Links */}
             <div className="flex gap-2">
               <button
                 onClick={() => handleLogOut()}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-display font-bold tracking-wider text-background/50 hover:text-background border border-background/10 hover:bg-[#D31100] hover:text-[11px] transition-all duration-300 hover:border-background/20"
               >
-                <LogOut className="w-3 h-3 hover:text-[11px]" />
+                <LogOut className="w-3 h-3" />
                 LOGOUT
               </button>
             </div>
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col">
-          <header className="h-20 border-b border-border flex items-center justify-between px-8">
-            <div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+        {/* Mobile overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        <div className="flex-1 flex flex-col mt-16 lg:mt-0">
+          <header className="border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:px-8 gap-4">
+            <div className="w-full sm:w-auto">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 flex-wrap">
                 {breadcrumbs.map((crumb, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    {index > 0 && <ChevronRight className="w-3 h-3" />}
+                    {index > 0 && (
+                      <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                    )}
                     <button
                       onClick={() => navigateToBreadcrumb(index)}
-                      className={`hover:text-primary transition uppercase tracking-wider ${
+                      className={`hover:text-primary transition uppercase tracking-wider text-xs ${
                         index === breadcrumbs.length - 1
                           ? "text-foreground font-medium"
                           : ""
                       }`}
                     >
-                      {crumb.name}
+                      <span className="truncate max-w-[100px] sm:max-w-none inline-block">
+                        {crumb.name}
+                      </span>
                     </button>
                   </div>
                 ))}
               </div>
-              <h1 className="font-display text-2xl font-bold tracking-tight uppercase">
+              <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight uppercase">
                 {activeSection === "starred"
                   ? "Starred Files"
                   : activeSection === "trash"
@@ -870,17 +901,18 @@ export default function Dashboard() {
                     : "Your Files"}
               </h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto flex-wrap">
               {activeSection === "files" && currentFolderId && (
                 <button
                   onClick={() => {
                     setMoveTargetFolder(currentFolderId);
                     setShowMoveModal(true);
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-xs font-display font-bold tracking-wider hover:opacity-90 transition"
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-primary text-primary-foreground text-xs font-display font-bold tracking-wider hover:opacity-90 transition"
                 >
                   <Upload className="w-4 h-4" />
-                  ADD FILE
+                  <span className="hidden sm:inline">ADD FILE</span>
+                  <span className="sm:hidden">ADD</span>
                 </button>
               )}
               {currentFolderId && (
@@ -889,38 +921,35 @@ export default function Dashboard() {
                     if (breadcrumbs.length > 1) {
                       const newBreadcrumbs = breadcrumbs.slice(0, -1);
                       const last = newBreadcrumbs[newBreadcrumbs.length - 1];
-
                       setBreadcrumbs(newBreadcrumbs);
                       setCurrentFolderId(last.id);
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-display font-bold tracking-wider border border-border hover:border-foreground transition"
+                  className="flex items-center gap-2 px-2 sm:px-3 py-2 text-xs font-display font-bold tracking-wider border border-border hover:border-foreground transition"
                 >
                   ← BACK
                 </button>
               )}
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <div className="relative flex-1 sm:flex-none">
+                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search files..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-11 pr-4 py-2.5 bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full sm:w-64 pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
-
               <div className="flex items-center border border-border relative z-10">
                 <button
-                  key={viewMode}
-                  onClick={() => setViewMode((prev) => "grid")}
-                  className={`p-2.5 transition ${viewMode === "grid" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 transition ${viewMode === "grid" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode((prev) => "list")}
-                  className={`p-2.5 transition ${viewMode === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 transition ${viewMode === "list" ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -929,64 +958,53 @@ export default function Dashboard() {
           </header>
 
           {/* Content Area */}
-          <main className="flex-1 p-8 overflow-auto">
+          <main className="flex-1 p-4 sm:p-8 overflow-auto">
             {/* Upload Zone */}
             {activeSection === "files" && (
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`mb-8 border-2 border-dashed transition-all duration-300 ${
+                className={`mb-6 sm:mb-8 border-2 border-dashed transition-all duration-300 ${
                   isDragging
                     ? "border-primary bg-primary/5 scale-[1.01]"
                     : "border-border hover:border-primary/40"
                 }`}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      handleUpload(e.target.files[0]);
-                    }
-                  }}
-                />
-
-                <div className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between p-4 sm:p-6 gap-4">
+                  <div className="flex items-center gap-4 sm:gap-6">
                     <div
-                      className={`w-14 h-14 flex items-center justify-center transition-all ${
+                      className={`w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center transition-all ${
                         isDragging
                           ? "bg-primary text-primary-foreground scale-110"
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <Upload className="w-6 h-6" />
+                      <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     <div>
-                      <p className="font-display font-bold text-sm uppercase tracking-wide">
+                      <p className="font-display font-bold text-xs sm:text-sm uppercase tracking-wide">
                         {uploading
                           ? "Uploading..."
                           : isDragging
                             ? "Drop to upload"
                             : "Drag & drop files"}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        or click to browse from your computer
+                      <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                        click to browse files (only images and PDFs up to 10
+                        MB).
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleBrowseClick}
-                    className={`px-5 py-2.5 bg-foreground text-background flex items-center gap-2 ${
+                    className={`px-4 sm:px-5 py-2 bg-foreground text-background flex items-center gap-2 text-xs sm:text-sm ${
                       uploading ? "opacity-50 cursor-not-allowed" : ""
                     }`}
                     disabled={uploading}
                   >
-                    <Plus className="w-5 h-5" />
-                    Browse Files
+                    <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Browse
                   </button>
                 </div>
               </div>
@@ -995,24 +1013,24 @@ export default function Dashboard() {
             {loading ? (
               <LoadingSkeleton />
             ) : filteredFiles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-20 h-20 bg-muted flex items-center justify-center mb-6">
+              <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted flex items-center justify-center mb-4 sm:mb-6">
                   {activeSection === "starred" ? (
-                    <Star className="w-8 h-8 text-muted-foreground" />
+                    <Star className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
                   ) : activeSection === "trash" ? (
-                    <Trash2 className="w-8 h-8 text-muted-foreground" />
+                    <Trash2 className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
                   ) : (
-                    <FolderOpen className="w-8 h-8 text-muted-foreground" />
+                    <FolderOpen className="w-6 h-6 sm:w-8 sm:h-8 text-muted-foreground" />
                   )}
                 </div>
-                <h3 className="font-display text-xl font-bold uppercase tracking-wide mb-2">
+                <h3 className="font-display text-lg sm:text-xl font-bold uppercase tracking-wide mb-2">
                   {activeSection === "starred"
                     ? "No Starred Items"
                     : activeSection === "trash"
                       ? "Trash is Empty"
                       : "No Files Yet"}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-sm">
                   {activeSection === "starred"
                     ? "Star your important files and folders to find them quickly here."
                     : activeSection === "trash"
@@ -1022,34 +1040,34 @@ export default function Dashboard() {
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-6 pb-6 border-b border-border ml-6">
-                  <div className="flex items-center gap-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-border gap-4">
+                  <div className="flex items-center gap-4 sm:gap-8">
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
                         Total Items
                       </p>
-                      <p className="font-display text-2xl font-bold">
+                      <p className="font-display text-xl sm:text-2xl font-bold">
                         {filteredFiles.length}
                       </p>
                     </div>
-                    <div className="w-px h-10 bg-border" />
+                    <div className="w-px h-8 sm:h-10 bg-border" />
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
                         Folders
                       </p>
-                      <p className="font-display text-2xl font-bold">
+                      <p className="font-display text-xl sm:text-2xl font-bold">
                         {
                           filteredFiles.filter((f) => f.type === "folder")
                             .length
                         }
                       </p>
                     </div>
-                    <div className="w-px h-10 bg-border" />
+                    <div className="w-px h-8 sm:h-10 bg-border" />
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
                         Files
                       </p>
-                      <p className="font-display text-2xl font-bold">
+                      <p className="font-display text-xl sm:text-2xl font-bold">
                         {filteredFiles.filter((f) => f.type === "file").length}
                       </p>
                     </div>
@@ -1059,7 +1077,7 @@ export default function Dashboard() {
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+                      ? "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4"
                       : "space-y-2"
                   }
                 >
@@ -1067,49 +1085,51 @@ export default function Dashboard() {
                     <div
                       key={file.id}
                       className={`group relative border border-border bg-card hover:border-foreground transition-all duration-200 ${
-                        viewMode === "grid" ? "" : "flex items-center gap-4 p-4"
+                        viewMode === "grid"
+                          ? ""
+                          : "flex items-center gap-3 sm:gap-4 p-3 sm:p-4"
                       }`}
                     >
                       {viewMode === "grid" ? (
                         <>
                           <div
-                            className="cursor-pointer p-4"
+                            className="cursor-pointer p-3 sm:p-4"
                             onClick={() =>
                               file.type === "folder" && openFolder(file)
                             }
                           >
                             <div
-                              className={`w-full aspect-square bg-muted flex items-center justify-center mb-4 ${getFileColor(file)} group-hover:scale-[1.02] transition-transform`}
+                              className={`w-full aspect-square bg-muted flex items-center justify-center mb-3 sm:mb-4 ${getFileColor(file)} group-hover:scale-[1.02] transition-transform`}
                             >
                               {getFileIcon(file)}
                             </div>
-                            <p className="text-sm font-display font-bold truncate uppercase tracking-wide">
+                            <p className="text-xs sm:text-sm font-display font-bold truncate uppercase tracking-wide">
                               {file.name?.trim() ? file.name : "Untitled File"}
                             </p>
                             <div className="flex items-center justify-between mt-2">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                              <p className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">
                                 {file.size || "Folder"}
                               </p>
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                              <p className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">
                                 {file.modified}
                               </p>
                             </div>
                           </div>
 
                           {/* Hover Actions */}
-                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                             {activeSection === "trash" ? (
                               <>
                                 <button
                                   onClick={() => restoreFile(file.id)}
-                                  className="p-2 bg-background border border-border hover:border-primary hover:text-primary transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-primary hover:text-primary transition"
                                   title="Restore"
                                 >
                                   <RotateCcw className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => permanentDelete(file.id)}
-                                  className="p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
                                   title="Delete permanently"
                                 >
                                   <X className="w-3 h-3" />
@@ -1120,7 +1140,7 @@ export default function Dashboard() {
                                 {file.type === "file" && (
                                   <button
                                     onClick={() => toggleStar(file.id)}
-                                    className={`p-2 bg-background border transition ${
+                                    className={`p-1.5 sm:p-2 bg-background border transition ${
                                       file.starred
                                         ? "border-primary text-primary"
                                         : "border-border hover:border-primary hover:text-primary"
@@ -1134,7 +1154,7 @@ export default function Dashboard() {
                                 )}
                                 <button
                                   onClick={() => moveToTrash(file.id)}
-                                  className="p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
                                   title="Move to trash"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -1150,7 +1170,7 @@ export default function Dashboard() {
                                   e.stopPropagation();
                                   openMoveModal(file.id);
                                 }}
-                                className="text-[10px] px-2 py-1 bg-primary text-white"
+                                className="text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-1 bg-primary text-white whitespace-nowrap"
                               >
                                 Add Existing
                               </button>
@@ -1160,7 +1180,7 @@ export default function Dashboard() {
                       ) : (
                         <>
                           <div
-                            className={`w-12 h-12 flex items-center justify-center bg-muted ${getFileColor(file)} cursor-pointer`}
+                            className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-muted ${getFileColor(file)} cursor-pointer flex-shrink-0`}
                             onClick={() =>
                               file.type === "folder" && openFolder(file)
                             }
@@ -1173,10 +1193,10 @@ export default function Dashboard() {
                               file.type === "folder" && openFolder(file)
                             }
                           >
-                            <p className="text-sm font-display font-bold truncate uppercase tracking-wide">
+                            <p className="text-xs sm:text-sm font-display font-bold truncate uppercase tracking-wide">
                               {file.name}
                             </p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
+                            <p className="text-[8px] sm:text-[10px] text-muted-foreground uppercase tracking-wider mt-1">
                               {file.size || "Folder"} • {file.modified}
                             </p>
                           </div>
@@ -1185,39 +1205,39 @@ export default function Dashboard() {
                               <>
                                 <button
                                   onClick={() => restoreFile(file.id)}
-                                  className="p-2 hover:text-primary transition"
+                                  className="p-1.5 sm:p-2 hover:text-primary transition"
                                   title="Restore"
                                 >
-                                  <RotateCcw className="w-4 h-4" />
+                                  <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                                 <button
                                   onClick={() => permanentDelete(file.id)}
-                                  className="p-2 hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 hover:text-destructive transition"
                                   title="Delete permanently"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                               </>
                             ) : (
                               <>
                                 <button
                                   onClick={() => toggleStar(file.id)}
-                                  className={`p-2 transition ${file.starred ? "text-primary" : "hover:text-primary"}`}
+                                  className={`p-1.5 sm:p-2 transition ${file.starred ? "text-primary" : "hover:text-primary"}`}
                                   title={file.starred ? "Unstar" : "Star"}
                                 >
                                   <Star
-                                    className={`w-4 h-4 ${file.starred ? "fill-current" : ""}`}
+                                    className={`w-3 h-3 sm:w-4 sm:h-4 ${file.starred ? "fill-current" : ""}`}
                                   />
                                 </button>
                                 <button
                                   onClick={() => moveToTrash(file.id)}
-                                  className="p-2 hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 hover:text-destructive transition"
                                   title="Move to trash"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
-                                <button className="p-2 hover:text-foreground transition">
-                                  <MoreVertical className="w-4 h-4" />
+                                <button className="p-1.5 sm:p-2 hover:text-foreground transition">
+                                  <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                               </>
                             )}
@@ -1232,6 +1252,18 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.[0]) {
+            handleUpload(e.target.files[0]);
+          }
+        }}
+      />
     </>
   );
 }
