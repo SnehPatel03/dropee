@@ -1,26 +1,23 @@
-"use client"
+"use client";
 import { useAuth } from "@clerk/nextjs";
-import {
-  ArrowRight,
-  Shield,
-  Zap,
-  Users,
-  Lock,
-  FolderSync,
-  Cloud,
-} from "lucide-react";
+import { ArrowRight, Cloud, Lock, Zap } from "lucide-react";
 import Link from "next/link";
+import { Space_Grotesk } from "next/font/google";
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400","700"],
+});
 export default function Home() {
   const { isSignedIn } = useAuth();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <nav className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <nav className="border-b border-border ">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between ">
           <Link
             href="/"
-            className="font-display text-2xl font-bold tracking-tight"
+            className={`${spaceGrotesk.className} font-display text-2xl font-extrabold tracking-tight`}
           >
             drop<span className="text-primary">ee</span>
           </Link>
@@ -54,7 +51,9 @@ export default function Home() {
             Simple cloud storage
           </div>
 
-          <h1 className="font-display text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] uppercase">
+          <h1
+            className={`${spaceGrotesk.className}font-display text-5xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight leading-[0.95] uppercase`}
+          >
             Store your
             <br />
             files with
@@ -143,11 +142,6 @@ export default function Home() {
                 working seamlessly in the background while you focus on what
                 matters.
               </p>
-              <p className="text-background/60 leading-relaxed">
-                With military-grade encryption, instant sync, and a clean
-                interface, Dropee is the storage platform for modern teams and
-                individuals who refuse to compromise.
-              </p>
             </div>
             <div className="grid grid-cols-2 gap-px bg-background/10">
               <div className="p-8 bg-foreground">
@@ -190,15 +184,12 @@ export default function Home() {
           <span className="text-primary">your storage?</span>
         </h2>
         <p className="text-muted-foreground max-w-md mx-auto mt-6">
-          Join Dropee to store, sync, and share their most important files.
+          Join Dropee to store your most important files.
         </p>
-        <button className="mt-10 px-8 py-3 bg-foreground text-background font-medium hover:bg-foreground/90 transition inline-flex items-center gap-2 group">
+        <Link href={"/sign-up"} className="mt-10 px-8 py-3 bg-foreground text-background font-medium hover:bg-foreground/90 transition inline-flex items-center gap-2 group">
           Get started free
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-        </button>
-        <p className="text-xs text-muted-foreground mt-4">
-          No credit card required
-        </p>
+        </Link>
       </section>
 
       {/* Footer */}
@@ -228,7 +219,7 @@ const features = [
     description:
       "Store all your files securely in the cloud. Access them from any device, anywhere.",
   },
-  
+
   {
     category: "Speed",
     tag: "Quick",

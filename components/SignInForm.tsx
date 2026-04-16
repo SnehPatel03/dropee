@@ -28,97 +28,124 @@ export default function SignInForm() {
       password: "",
     },
   });
-const onSubmit = async (data: z.infer<typeof signInSchema>) => {
-  setIsSubmitting(true);
-  setAuthErr(null);
+  const onSubmit = async (data: z.infer<typeof signInSchema>) => {
+    setIsSubmitting(true);
+    setAuthErr(null);
 
-  try {
-    if (isSignedIn) {
-      await signOut();
-    }
-
-    const { error } :any= await signIn.password({
-      identifier: data.identifier,
-      password: data.password,
-    });
-
-    if (error) {
-
-      
-      // Handle specific error codes
-      if (error.errors[0]?.code === 'form_identifier_not_found') {
-        setAuthErr("No account found with this email.");
-      } else if (error.errors[0]?.code === 'form_password_incorrect') {
-        setAuthErr("Incorrect password.");
-      } else {
-        setAuthErr(error.errors[0]?.message || "Something went wrong.");
+    try {
+      if (isSignedIn) {
+        await signOut();
       }
-      return;
-    }
 
-    if (signIn.status === 'complete') {
-      await signIn.finalize({
-        navigate: ({ session, decorateUrl }) => {
-          if (session?.currentTask) {
-            console.log(session?.currentTask);
-            return;
-          }
-          
-          const url = decorateUrl('/dashboard');
-          if (url.startsWith('http')) {
-            window.location.href = url;
-          } else {
-            router.push(url);
-          }
-        },
+      const { error }: any = await signIn.password({
+        identifier: data.identifier,
+        password: data.password,
       });
-    } else if (signIn.status === 'needs_second_factor') {
-      setAuthErr("Multi-factor authentication required.");
-    } else if (signIn.status === 'needs_client_trust') {
-      const emailCodeFactor = signIn.supportedSecondFactors.find(
-        (factor) => factor.strategy === 'email_code',
-      );
-      if (emailCodeFactor) {
-        await signIn.mfa.sendEmailCode();
+
+      if (error) {
+        // Handle specific error codes
+        if (error.errors[0]?.code === "form_identifier_not_found") {
+          setAuthErr("No account found with this email.");
+        } else if (error.errors[0]?.code === "form_password_incorrect") {
+          setAuthErr("Incorrect password.");
+        } else {
+          setAuthErr(error.errors[0]?.message || "Something went wrong.");
+        }
+        return;
       }
-    } else {
-      console.error('Sign-in attempt not complete:', signIn);
-      setAuthErr("Sign-in incomplete. Please try again.");
+
+      if (signIn.status === "complete") {
+        await signIn.finalize({
+          navigate: ({ session, decorateUrl }) => {
+            if (session?.currentTask) {
+              console.log(session?.currentTask);
+              return;
+            }
+
+            const url = decorateUrl("/dashboard");
+            if (url.startsWith("http")) {
+              window.location.href = url;
+            } else {
+              router.push(url);
+            }
+          },
+        });
+      } else if (signIn.status === "needs_second_factor") {
+        setAuthErr("Multi-factor authentication required.");
+      } else if (signIn.status === "needs_client_trust") {
+        const emailCodeFactor = signIn.supportedSecondFactors.find(
+          (factor) => factor.strategy === "email_code",
+        );
+        if (emailCodeFactor) {
+          await signIn.mfa.sendEmailCode();
+        }
+      } else {
+        console.error("Sign-in attempt not complete:", signIn);
+        setAuthErr("Sign-in incomplete. Please try again.");
+      }
+    } catch (err: any) {
+      console.error(JSON.stringify(err, null, 2));
+      setAuthErr(err?.message || "Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
     }
-  } catch (err: any) {
-    console.error(JSON.stringify(err, null, 2));
-    setAuthErr(err?.message || "Something went wrong.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFA]">
-      {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#0A0A0A] flex-col justify-between p-12">
-        <div>
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0A0A0A] flex-col justify-between p-12 relative overflow-hidden">
+        {/* 🔴 subtle background glow */}
+        <div className="absolute -top-32 -left-32 w-[300px] h-[300px] bg-[#D31100]/20 blur-3xl rounded-full" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] bg-white/5 blur-2xl rounded-full" />
+
+        {/* 🔝 Logo */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <Link href="/" className="inline-block">
             <span className="font-display text-2xl font-bold tracking-tight text-white">
               drop<span className="text-[#D31100]">ee</span>
               <span className="text-[#D31100]">.</span>
             </span>
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="space-y-6">
-          <h1 className="font-display text-5xl font-bold uppercase tracking-tight text-white leading-tight">
+        {/* 🧠 Main Content */}
+        <div className="space-y-8">
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="font-display text-5xl lg:text-6xl font-bold uppercase tracking-tight text-white leading-[1]"
+          >
             Welcome
             <br />
-            Back.
-          </h1>
-          <p className="text-[#888888] text-lg max-w-md">
-            Access your files from anywhere. Secure, fast, and simple cloud
-            storage for everyone.
-          </p>
+            Back<span className="text-[#D31100]">.</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 0.8, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="text-[#A1A1A1] text-lg max-w-md leading-relaxed"
+          >
+            Access your files from anywhere.
+            <br />
+            Fast, secure, and beautifully simple cloud storage.
+          </motion.p>
         </div>
 
-        <div className="flex items-center gap-6 text-sm text-[#666666]"></div>
+        {/* 👇 Bottom subtle info */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          transition={{ delay: 0.5, duration: 1 }}
+          className="flex items-center gap-6 text-sm text-[#666666]"
+        >
+
+        </motion.div>
       </div>
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">

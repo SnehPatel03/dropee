@@ -16,7 +16,9 @@ export async function GET() {
         {
           error: "Unauthorize",
         },
-        { status: 401 },
+        { 
+          status: 401
+        },
       );
     }
 
@@ -25,10 +27,12 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
+      error:
           "There is an Error to generate authentication params for Imagekit",
       },
-      { status: 500 },
+      {
+         status: 500 
+      },
     );
   }
 }

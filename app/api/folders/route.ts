@@ -19,18 +19,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, 
-        // userId: BodyUserId,
-         parent_id = null } = body;
-
-    // if (userId !== BodyUserId) {
-    //   return NextResponse.json(
-    //     {
-    //       error: "Unauthorize",
-    //     },
-    //     { status: 401 },
-    //   );
-    // }
+    const {
+      name,
+      // userId: BodyUserId,
+      parent_id = null,
+    } = body;
 
     if (!name || name.trim() === "" || typeof name !== "string") {
       return NextResponse.json(

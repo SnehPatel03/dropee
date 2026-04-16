@@ -13,6 +13,7 @@ import {
   FileImage,
   FileText,
   FolderOpen,
+  Download,
   FolderPlus,
   Grid3X3,
   Home,
@@ -28,6 +29,7 @@ import {
   Upload,
   X,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -42,9 +44,9 @@ type FileItem = {
   deleted: boolean;
   parentId: string | null;
   thumbnail?: string;
+  url?: string;
 };
 
-// Loading Component
 const LoadingOverlay = ({ message }: { message?: string }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-background border border-border p-8 flex flex-col items-center gap-4 shadow-xl">
@@ -172,6 +174,7 @@ export default function Dashboard() {
         deleted: f.isTrash,
         parentId: f.parent_id,
         thumbnail: f.thumbnailUrl,
+        url: f.fileUrl,
       }));
 
       setFiles(mapped);
@@ -239,6 +242,7 @@ export default function Dashboard() {
           deleted: false,
           parentId: data.parent_id || null,
           thumbnail: data.thumbnailUrl,
+          url: data.fileUrl,
         },
         ...prev,
       ]);
@@ -500,7 +504,7 @@ export default function Dashboard() {
     setOperationMessage("Restoring...");
 
     try {
-      const res = await fetch(`/api/files/${id}/trash`, {
+      const res = await fetch(`/api/files/${id}/restore`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
       });
@@ -515,6 +519,27 @@ export default function Dashboard() {
     } finally {
       setOperationLoading(false);
       setOperationMessage("");
+    }
+  };
+
+  const handleDownload = async (file: FileItem) => {
+    if (!file.url) return;
+
+    try {
+      const res = await fetch(file.url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = file.name || "file";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+      toast.info("Download started");
+    } catch (err) {
+      console.error("Download failed", err);
+      toast.error("Failed to download");
     }
   };
 
@@ -615,7 +640,6 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Global Loading Overlay */}
       {operationLoading && <LoadingOverlay message={operationMessage} />}
 
       <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row">
@@ -661,7 +685,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* User Profile - Animated Card */}
           <div className="px-8 pb-8">
             <div className="group relative overflow-hidden p-4 bg-background/5 border border-background/10 hover:border-primary/50 transition-all duration-500 cursor-pointer">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -861,7 +884,6 @@ export default function Dashboard() {
           </div>
         </aside>
 
-        {/* Mobile overlay */}
         {mobileMenuOpen && (
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -957,9 +979,7 @@ export default function Dashboard() {
             </div>
           </header>
 
-          {/* Content Area */}
           <main className="flex-1 p-4 sm:p-8 overflow-auto">
-            {/* Upload Zone */}
             {activeSection === "files" && (
               <div
                 onDragOver={handleDragOver}
@@ -1086,7 +1106,7 @@ export default function Dashboard() {
                       key={file.id}
                       className={`group relative border border-border bg-card hover:border-foreground transition-all duration-200 ${
                         viewMode === "grid"
-                          ? ""
+                          ? "overflow-hidden"
                           : "flex items-center gap-3 sm:gap-4 p-3 sm:p-4"
                       }`}
                     >
@@ -1116,20 +1136,20 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          {/* Hover Actions */}
-                          <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          {/* Action Buttons - Grid View */}
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {activeSection === "trash" ? (
                               <>
                                 <button
                                   onClick={() => restoreFile(file.id)}
-                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-primary hover:text-primary transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border rounded hover:border-primary hover:text-primary transition"
                                   title="Restore"
                                 >
                                   <RotateCcw className="w-3 h-3" />
                                 </button>
                                 <button
                                   onClick={() => permanentDelete(file.id)}
-                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border rounded hover:border-destructive hover:text-destructive transition"
                                   title="Delete permanently"
                                 >
                                   <X className="w-3 h-3" />
@@ -1138,23 +1158,43 @@ export default function Dashboard() {
                             ) : (
                               <>
                                 {file.type === "file" && (
-                                  <button
-                                    onClick={() => toggleStar(file.id)}
-                                    className={`p-1.5 sm:p-2 bg-background border transition ${
-                                      file.starred
-                                        ? "border-primary text-primary"
-                                        : "border-border hover:border-primary hover:text-primary"
-                                    }`}
-                                    title={file.starred ? "Unstar" : "Star"}
-                                  >
-                                    <Star
-                                      className={`w-3 h-3 ${file.starred ? "fill-current" : ""}`}
-                                    />
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => toggleStar(file.id)}
+                                      className={`p-1.5 sm:p-2 bg-background border rounded transition ${
+                                        file.starred
+                                          ? "border-primary text-primary"
+                                          : "border-border hover:border-primary hover:text-primary"
+                                      }`}
+                                      title={file.starred ? "Unstar" : "Star"}
+                                    >
+                                      <Star
+                                        className={`w-3 h-3 ${file.starred ? "fill-current" : ""}`}
+                                      />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownload(file)}
+                                      className="p-1.5 sm:p-2 bg-background border border-border rounded hover:border-primary hover:text-primary transition"
+                                      title="Download"
+                                    >
+                                      <Download className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (file.url) {
+                                          window.open(file.url, "_blank");
+                                        }
+                                      }}
+                                      className="p-1.5 sm:p-2 bg-background border border-border rounded hover:border-primary hover:text-primary transition"
+                                      title="Preview"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                    </button>
+                                  </>
                                 )}
                                 <button
                                   onClick={() => moveToTrash(file.id)}
-                                  className="p-1.5 sm:p-2 bg-background border border-border hover:border-destructive hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 bg-background border border-border rounded hover:border-destructive hover:text-destructive transition"
                                   title="Move to trash"
                                 >
                                   <Trash2 className="w-3 h-3" />
@@ -1170,7 +1210,7 @@ export default function Dashboard() {
                                   e.stopPropagation();
                                   openMoveModal(file.id);
                                 }}
-                                className="text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-1 bg-primary text-white whitespace-nowrap"
+                                className="text-[8px] sm:text-[10px] px-1.5 sm:px-2 py-1 bg-primary text-white rounded whitespace-nowrap"
                               >
                                 Add Existing
                               </button>
@@ -1178,9 +1218,10 @@ export default function Dashboard() {
                           )}
                         </>
                       ) : (
+                        // List View
                         <>
                           <div
-                            className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-muted ${getFileColor(file)} cursor-pointer flex-shrink-0`}
+                            className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-muted ${getFileColor(file)} cursor-pointer flex-shrink-0 rounded`}
                             onClick={() =>
                               file.type === "folder" && openFolder(file)
                             }
@@ -1200,19 +1241,21 @@ export default function Dashboard() {
                               {file.size || "Folder"} • {file.modified}
                             </p>
                           </div>
+                          
+                          {/* Action Buttons - List View */}
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {activeSection === "trash" ? (
                               <>
                                 <button
                                   onClick={() => restoreFile(file.id)}
-                                  className="p-1.5 sm:p-2 hover:text-primary transition"
+                                  className="p-1.5 sm:p-2 hover:text-primary transition rounded"
                                   title="Restore"
                                 >
                                   <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                                 <button
                                   onClick={() => permanentDelete(file.id)}
-                                  className="p-1.5 sm:p-2 hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 hover:text-destructive transition rounded"
                                   title="Delete permanently"
                                 >
                                   <X className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1220,24 +1263,54 @@ export default function Dashboard() {
                               </>
                             ) : (
                               <>
-                                <button
-                                  onClick={() => toggleStar(file.id)}
-                                  className={`p-1.5 sm:p-2 transition ${file.starred ? "text-primary" : "hover:text-primary"}`}
-                                  title={file.starred ? "Unstar" : "Star"}
-                                >
-                                  <Star
-                                    className={`w-3 h-3 sm:w-4 sm:h-4 ${file.starred ? "fill-current" : ""}`}
-                                  />
-                                </button>
+                                {file.type === "file" && (
+                                  <>
+                                    <button
+                                      onClick={() => toggleStar(file.id)}
+                                      className={`p-1.5 sm:p-2 transition rounded ${
+                                        file.starred ? "text-primary" : "hover:text-primary"
+                                      }`}
+                                      title={file.starred ? "Unstar" : "Star"}
+                                    >
+                                      <Star
+                                        className={`w-3 h-3 sm:w-4 sm:h-4 ${file.starred ? "fill-current" : ""}`}
+                                      />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownload(file)}
+                                      className="p-1.5 sm:p-2 hover:text-primary transition rounded"
+                                      title="Download"
+                                    >
+                                      <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (file.url) {
+                                          window.open(file.url, "_blank");
+                                        }
+                                      }}
+                                      className="p-1.5 sm:p-2 hover:text-primary transition rounded"
+                                      title="Preview"
+                                    >
+                                      <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    </button>
+                                    {/* {file.type === "folder" && (
+                                      <button
+                                        onClick={() => openMoveModal(file.id)}
+                                        className="p-1.5 sm:p-2 hover:text-primary transition rounded"
+                                        title="Add to folder"
+                                      >
+                                        <FolderPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      </button>
+                                    )} */}
+                                  </>
+                                )}
                                 <button
                                   onClick={() => moveToTrash(file.id)}
-                                  className="p-1.5 sm:p-2 hover:text-destructive transition"
+                                  className="p-1.5 sm:p-2 hover:text-destructive transition rounded"
                                   title="Move to trash"
                                 >
                                   <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                </button>
-                                <button className="p-1.5 sm:p-2 hover:text-foreground transition">
-                                  <MoreVertical className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                               </>
                             )}
