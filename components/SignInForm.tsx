@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { signInSchema } from "@/schemas/signInSchema";
 import { useSignIn, useAuth } from "@clerk/nextjs";
@@ -28,83 +28,70 @@ export default function SignInForm() {
       password: "",
     },
   });
+const onSubmit = async (data: z.infer<typeof signInSchema>) => {
+  setIsSubmitting(true);
+  setAuthErr(null);
 
-  const onSubmit = async (data: z.infer<typeof signInSchema>) => {
-    setIsSubmitting(true);
-    setAuthErr(null);
-
-    try {
-      if (isSignedIn) {
-        await signOut();
-      }
-
-      const { error }: any = await signIn.password({
-        emailAddress: data.identifier,
-        password: data.password,
-      });
-
-      if (error) {
-        const err = error.errors?.[0];
-        console.log("ERROR:", err);
-
-        if (err?.code === "form_identifier_not_found") {
-          setAuthErr("No account found with this email.");
-          return;
-        }
-
-        if (err?.code === "form_password_incorrect") {
-          setAuthErr("Incorrect password.");
-          return;
-        }
-
-        if (err?.code === "session_exists") {
-          setAuthErr("You are already signed in. Please logout first.");
-          return;
-        }
-
-        setAuthErr(err?.message || "Sign-in failed");
-        return;
-      }
-
-      if (signIn.status === "complete") {
-        await signIn.finalize({
-          navigate: ({ session, decorateUrl }) => {
-            // Handle session tasks
-            // See https://clerk.com/docs/guides/development/custom-flows/authentication/session-tasks
-            if (session?.currentTask) {
-              console.log(session?.currentTask);
-              return;
-            }
-
-            // If no session tasks, navigate the signed-in user to the dashboard
-            const url = decorateUrl("/dashboard");
-            if (url.startsWith("http")) {
-              window.location.href = url;
-            } else {
-              router.push(url);
-            }
-          },
-        });
-      } else if (signIn.status === "needs_second_factor") {
-        // Handle MFA
-        // See https://clerk.com/docs/guides/development/custom-flows/authentication/multi-factor-authentication
-        setAuthErr("Multi-factor authentication required.");
-      } else if (signIn.status === "needs_client_trust") {
-        // Handle client trust
-        // See https://clerk.com/docs/guides/development/custom-flows/authentication/client-trust
-        setAuthErr("Additional verification required.");
-      } else {
-        // Check why the sign-in is not complete
-        console.error("Sign-in attempt not complete:", signIn);
-        setAuthErr("Sign-in incomplete. Please try again.");
-      }
-    } catch (error: any) {
-      console.log("FULL ERROR:", error);
-      setAuthErr("Something went wrong. Try again.");
-    } finally {
-      setIsSubmitting(false);
+  try {
+    if (isSignedIn) {
+      await signOut();
     }
-  };
+
+    const { error } :any= await signIn.password({
+      identifier: data.identifier,
+      password: data.password,
+    });
+
+    if (error) {
+
+      
+      // Handle specific error codes
+      if (error.errors[0]?.code === 'form_identifier_not_found') {
+        setAuthErr("No account found with this email.");
+      } else if (error.errors[0]?.code === 'form_password_incorrect') {
+        setAuthErr("Incorrect password.");
+      } else {
+        setAuthErr(error.errors[0]?.message || "Something went wrong.");
+      }
+      return;
+    }
+
+    if (signIn.status === 'complete') {
+      await signIn.finalize({
+        navigate: ({ session, decorateUrl }) => {
+          if (session?.currentTask) {
+            console.log(session?.currentTask);
+            return;
+          }
+          
+          const url = decorateUrl('/dashboard');
+          if (url.startsWith('http')) {
+            window.location.href = url;
+          } else {
+            router.push(url);
+          }
+        },
+      });
+    } else if (signIn.status === 'needs_second_factor') {
+      setAuthErr("Multi-factor authentication required.");
+    } else if (signIn.status === 'needs_client_trust') {
+      const emailCodeFactor = signIn.supportedSecondFactors.find(
+        (factor) => factor.strategy === 'email_code',
+      );
+      if (emailCodeFactor) {
+        await signIn.mfa.sendEmailCode();
+      }
+    } else {
+      console.error('Sign-in attempt not complete:', signIn);
+      setAuthErr("Sign-in incomplete. Please try again.");
+    }
+  } catch (err: any) {
+    console.error(JSON.stringify(err, null, 2));
+    setAuthErr(err?.message || "Something went wrong.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="flex min-h-screen bg-[#FAFAFA]">
