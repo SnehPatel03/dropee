@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { files } from "@/lib/db/schema";
 import { auth } from "@clerk/nextjs/server";
+import { uuid } from "drizzle-orm/gel-core";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       type: imagekit.type || "image",
       thumbnailUrl: imagekit.thumbnailurl || null,
-      parent_id: null,
+      imakekit_file_id:"123",
       fileUrl: imagekit.url,
       size: imagekit.size || 0,
       isFolder: false,

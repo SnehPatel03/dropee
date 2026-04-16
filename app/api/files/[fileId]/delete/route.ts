@@ -49,22 +49,19 @@ export async function DELETE(
         { status: 401 },
       );
     }
+    if (!file.isFolder && file.imagekit_file_id) {
+      try {
+        await imageKit.deleteFile(file.imagekit_file_id);
+      } catch (error) {
+        console.log(
+          "There is error in deleteing File from Imagekit storage",
+        );
+      }
+    }
 
     await db
       .delete(files)
       .where(and(eq(files.id, fileId), eq(files.user_id, userId)));
-
-    //also deleted from ImageKit
-    try {
-      await imageKit.deleteFile(file.imagekit_file_id);
-    } catch (error) {
-      return NextResponse.json(
-        {
-          error: "There is an Error to Delete the the File from ImageKit.",
-        },
-        { status: 500 },
-      );
-    }
 
     return NextResponse.json({
       message: "File permanently deleted",
