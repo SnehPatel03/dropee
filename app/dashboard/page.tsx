@@ -1136,8 +1136,8 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          {/* Action Buttons - Grid View */}
-                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Action Buttons - Always visible on mobile, hover on desktop */}
+                          <div className="absolute top-2 right-2 flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             {activeSection === "trash" ? (
                               <>
                                 <button
@@ -1204,7 +1204,7 @@ export default function Dashboard() {
                           </div>
 
                           {file.type === "folder" && (
-                            <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition">
+                            <div className="absolute bottom-2 left-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1242,8 +1242,8 @@ export default function Dashboard() {
                             </p>
                           </div>
                           
-                          {/* Action Buttons - List View */}
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Action Buttons - Always visible on mobile, hover on desktop */}
+                          <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             {activeSection === "trash" ? (
                               <>
                                 <button
@@ -1294,15 +1294,6 @@ export default function Dashboard() {
                                     >
                                       <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                                     </button>
-                                    {/* {file.type === "folder" && (
-                                      <button
-                                        onClick={() => openMoveModal(file.id)}
-                                        className="p-1.5 sm:p-2 hover:text-primary transition rounded"
-                                        title="Add to folder"
-                                      >
-                                        <FolderPlus className="w-3 h-3 sm:w-4 sm:h-4" />
-                                      </button>
-                                    )} */}
                                   </>
                                 )}
                                 <button

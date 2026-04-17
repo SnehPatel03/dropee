@@ -1,9 +1,10 @@
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer, Zoom,Slide } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,24 +37,20 @@ export default function RootLayout({
       >
         <body className="min-h-full flex flex-col">
           {children}
-          <ToastContainer
-            position="bottom-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            pauseOnHover
-            draggable
-            theme="dark"
-            toastStyle={{
-              background: "rgba(20, 20, 20, 0.6)",
-              color: "#fff",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "12px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-            }}
-          />
+
+
+<ToastContainer
+  position="bottom-right"
+  autoClose={3000}
+  newestOnTop
+  closeOnClick
+  pauseOnHover
+  draggable
+  transition={Slide}
+  toastClassName="group relative flex items-center gap-3 p-4 rounded-xl overflow-hidden bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.7)]"
+  bodyClassName="text-sm font-medium text-white tracking-tight"
+  progressClassName="bg-gradient-to-r from-[#D31100] via-red-500 to-[#ff3b2f]"
+/>
         </body>
       </html>
     </ClerkProvider>

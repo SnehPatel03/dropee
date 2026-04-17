@@ -25,6 +25,48 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 🔴 animated glow border */
+.Toastify__toast::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(
+    130deg,
+    rgba(211, 17, 0, 0.8),
+    rgba(255, 255, 255, 0.08),
+    rgba(211, 17, 0, 0.5)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ✨ hover glow effect */
+.Toastify__toast:hover {
+  box-shadow: 0 0 0 1px rgba(211, 17, 0, 0.4),
+              0 12px 40px rgba(0,0,0,0.8),
+              0 0 20px rgba(211, 17, 0, 0.25);
+  transform: translateY(-2px) scale(1.01);
+  transition: all 0.25s ease;
+}
+
+/* 🧠 subtle text tone */
+.Toastify__toast-body {
+  color: #e5e5e5;
+}
+
+/* ❌ close button styling */
+.Toastify__close-button {
+  color: #888;
+}
+.Toastify__close-button:hover {
+  color: #fff;
+}
 .Toastify__toast {
   background: rgba(20, 20, 20, 0.55) !important;
   backdrop-filter: blur(14px);
@@ -35,21 +77,6 @@ body {
   padding: 12px 14px;
 }
 
-.Toastify__progress-bar {
-  background: linear-gradient(90deg, #7c3aed, #06b6d4) !important;
-}
-
-.Toastify__close-button {
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.Toastify__toast--success {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
-}
-
-.Toastify__toast--error {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
-}
 
 @custom-variant dark (&:is(.dark *));
 
