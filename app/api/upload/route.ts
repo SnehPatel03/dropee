@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       type: imagekit.type || "image",
       thumbnailUrl: imagekit.thumbnailurl || null,
-      imakekit_file_id:"123",
+      imagekit_file_id:"123",
       fileUrl: imagekit.url,
       size: imagekit.size || 0,
       isFolder: false,

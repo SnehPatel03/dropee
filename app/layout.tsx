@@ -48,7 +48,6 @@ export default function RootLayout({
   draggable
   transition={Slide}
   toastClassName="group relative flex items-center gap-3 p-4 rounded-xl overflow-hidden bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.7)]"
-  bodyClassName="text-sm font-medium text-white tracking-tight"
   progressClassName="bg-gradient-to-r from-[#D31100] via-red-500 to-[#ff3b2f]"
 />
         </body>
